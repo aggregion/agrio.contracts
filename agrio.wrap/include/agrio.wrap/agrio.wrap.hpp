@@ -1,18 +1,18 @@
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/ignore.hpp>
-#include <eosiolib/transaction.hpp>
+#include <agriolib/agrio.hpp>
+#include <agriolib/ignore.hpp>
+#include <agriolib/transaction.hpp>
 
-namespace eosio {
+namespace agrio {
 
-   class [[eosio::contract("eosio.wrap")]] wrap : public contract {
+   class [[agrio::contract("agrio.wrap")]] wrap : public contract {
       public:
          using contract::contract;
 
-         [[eosio::action]]
+         [[agrio::action]]
          void exec( ignore<name> executer, ignore<transaction> trx );
 
    };
 
-} /// namespace eosio
+} /// namespace agrio

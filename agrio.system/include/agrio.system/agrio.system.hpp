@@ -1,32 +1,32 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in agr/LICENSE.txt
  */
 #pragma once
 
-#include <eosio.system/native.hpp>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/time.hpp>
-#include <eosiolib/privileged.hpp>
-#include <eosiolib/singleton.hpp>
-#include <eosio.system/exchange_state.hpp>
+#include <agrio.system/native.hpp>
+#include <agriolib/asset.hpp>
+#include <agriolib/time.hpp>
+#include <agriolib/privileged.hpp>
+#include <agriolib/singleton.hpp>
+#include <agrio.system/exchange_state.hpp>
 
 #include <string>
 #include <type_traits>
 #include <optional>
 
-namespace eosiosystem {
+namespace agriosystem {
 
-   using eosio::name;
-   using eosio::asset;
-   using eosio::symbol;
-   using eosio::symbol_code;
-   using eosio::indexed_by;
-   using eosio::const_mem_fun;
-   using eosio::block_timestamp;
-   using eosio::time_point;
-   using eosio::microseconds;
-   using eosio::datastream;
+   using agrio::name;
+   using agrio::asset;
+   using agrio::symbol;
+   using agrio::symbol_code;
+   using agrio::indexed_by;
+   using agrio::const_mem_fun;
+   using agrio::block_timestamp;
+   using agrio::time_point;
+   using agrio::microseconds;
+   using agrio::datastream;
 
    template<typename E, typename F>
    static inline auto has_field( F flags, E field )
@@ -47,7 +47,7 @@ namespace eosiosystem {
          return ( flags & ~static_cast<F>(field) );
    }
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] name_bid {
+   struct [[agrio::table, agrio::contract("agrio.system")]] name_bid {
      name            newname;
      name            high_bidder;
      int64_t         high_bid = 0; ///< negative high_bid == closed auction waiting to be claimed
@@ -57,20 +57,20 @@ namespace eosiosystem {
      uint64_t by_high_bid()const { return static_cast<uint64_t>(-high_bid); }
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] bid_refund {
+   struct [[agrio::table, agrio::contract("agrio.system")]] bid_refund {
       name         bidder;
       asset        amount;
 
       uint64_t primary_key()const { return bidder.value; }
    };
 
-   typedef eosio::multi_index< "namebids"_n, name_bid,
+   typedef agrio::multi_index< "namebids"_n, name_bid,
                                indexed_by<"highbid"_n, const_mem_fun<name_bid, uint64_t, &name_bid::by_high_bid>  >
                              > name_bid_table;
 
-   typedef eosio::multi_index< "bidrefunds"_n, bid_refund > bid_refund_table;
+   typedef agrio::multi_index< "bidrefunds"_n, bid_refund > bid_refund_table;
 
-   struct [[eosio::table("global"), eosio::contract("eosio.system")]] eosio_global_state : eosio::blockchain_parameters {
+   struct [[agrio::table("global"), agrio::contract("agrio.system")]] agrio_global_state : agrio::blockchain_parameters {
       uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
 
       uint64_t             max_ram_size = 64ll*1024 * 1024 * 1024;
@@ -89,7 +89,7 @@ namespace eosiosystem {
       block_timestamp      last_name_close;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
+      AGRLIB_SERIALIZE_DERIVED( agrio_global_state, agrio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
@@ -99,8 +99,8 @@ namespace eosiosystem {
    /**
     * Defines new global state parameters added after version 1.0
     */
-   struct [[eosio::table("global2"), eosio::contract("eosio.system")]] eosio_global_state2 {
-      eosio_global_state2(){}
+   struct [[agrio::table("global2"), agrio::contract("agrio.system")]] agrio_global_state2 {
+      agrio_global_state2(){}
 
       uint16_t          new_ram_per_block = 0;
       block_timestamp   last_ram_increase;
@@ -108,22 +108,22 @@ namespace eosiosystem {
       double            total_producer_votepay_share = 0;
       uint8_t           revision = 0; ///< used to track version updates in the future.
 
-      EOSLIB_SERIALIZE( eosio_global_state2, (new_ram_per_block)(last_ram_increase)(last_block_num)
+      AGRLIB_SERIALIZE( agrio_global_state2, (new_ram_per_block)(last_ram_increase)(last_block_num)
                         (total_producer_votepay_share)(revision) )
    };
 
-   struct [[eosio::table("global3"), eosio::contract("eosio.system")]] eosio_global_state3 {
-      eosio_global_state3() { }
+   struct [[agrio::table("global3"), agrio::contract("agrio.system")]] agrio_global_state3 {
+      agrio_global_state3() { }
       time_point        last_vpay_state_update;
       double            total_vpay_share_change_rate = 0;
 
-      EOSLIB_SERIALIZE( eosio_global_state3, (last_vpay_state_update)(total_vpay_share_change_rate) )
+      AGRLIB_SERIALIZE( agrio_global_state3, (last_vpay_state_update)(total_vpay_share_change_rate) )
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] producer_info {
+   struct [[agrio::table, agrio::contract("agrio.system")]] producer_info {
       name                  owner;
       double                total_votes = 0;
-      eosio::public_key     producer_key; /// a packed public key object
+      agrio::public_key     producer_key; /// a packed public key object
       bool                  is_active = true;
       std::string           url;
       uint32_t              unpaid_blocks = 0;
@@ -136,11 +136,11 @@ namespace eosiosystem {
       void     deactivate()       { producer_key = public_key(); is_active = false; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
+      AGRLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
                         (unpaid_blocks)(last_claim_time)(location) )
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] producer_info2 {
+   struct [[agrio::table, agrio::contract("agrio.system")]] producer_info2 {
       name            owner;
       double          votepay_share = 0;
       time_point      last_votepay_share_update;
@@ -148,10 +148,10 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
+      AGRLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] voter_info {
+   struct [[agrio::table, agrio::contract("agrio.system")]] voter_info {
       name                owner;     /// the voter
       name                proxy;     /// the proxy set by the voter, if any
       std::vector<name>   producers; /// the producers approved by this voter if no proxy set
@@ -174,7 +174,7 @@ namespace eosiosystem {
 
       uint32_t            flags1 = 0;
       uint32_t            reserved2 = 0;
-      eosio::asset        reserved3;
+      agrio::asset        reserved3;
 
       uint64_t primary_key()const { return owner.value; }
 
@@ -185,25 +185,25 @@ namespace eosiosystem {
       };
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
+      AGRLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
 
-   typedef eosio::multi_index< "voters"_n, voter_info >  voters_table;
+   typedef agrio::multi_index< "voters"_n, voter_info >  voters_table;
 
 
-   typedef eosio::multi_index< "producers"_n, producer_info,
+   typedef agrio::multi_index< "producers"_n, producer_info,
                                indexed_by<"prototalvote"_n, const_mem_fun<producer_info, double, &producer_info::by_votes>  >
                              > producers_table;
-   typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
+   typedef agrio::multi_index< "producers2"_n, producer_info2 > producers_table2;
 
-   typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
-   typedef eosio::singleton< "global2"_n, eosio_global_state2 > global_state2_singleton;
-   typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
+   typedef agrio::singleton< "global"_n, agrio_global_state >   global_state_singleton;
+   typedef agrio::singleton< "global2"_n, agrio_global_state2 > global_state2_singleton;
+   typedef agrio::singleton< "global3"_n, agrio_global_state3 > global_state3_singleton;
 
    //   static constexpr uint32_t     max_inflation_rate = 5;  // 5% annual inflation
    static constexpr uint32_t     seconds_per_day = 24 * 3600;
 
-   class [[eosio::contract("eosio.system")]] system_contract : public native {
+   class [[agrio::contract("agrio.system")]] system_contract : public native {
       private:
          voters_table            _voters;
          producers_table         _producers;
@@ -211,49 +211,49 @@ namespace eosiosystem {
          global_state_singleton  _global;
          global_state2_singleton _global2;
          global_state3_singleton _global3;
-         eosio_global_state      _gstate;
-         eosio_global_state2     _gstate2;
-         eosio_global_state3     _gstate3;
+         agrio_global_state      _gstate;
+         agrio_global_state2     _gstate2;
+         agrio_global_state3     _gstate3;
          rammarket               _rammarket;
 
       public:
-         static constexpr eosio::name active_permission{"active"_n};
-         static constexpr eosio::name token_account{"eosio.token"_n};
-         static constexpr eosio::name ram_account{"eosio.ram"_n};
-         static constexpr eosio::name ramfee_account{"eosio.ramfee"_n};
-         static constexpr eosio::name stake_account{"eosio.stake"_n};
-         static constexpr eosio::name bpay_account{"eosio.bpay"_n};
-         static constexpr eosio::name vpay_account{"eosio.vpay"_n};
-         static constexpr eosio::name names_account{"eosio.names"_n};
-         static constexpr eosio::name saving_account{"eosio.saving"_n};
+         static constexpr agrio::name active_permission{"active"_n};
+         static constexpr agrio::name token_account{"agrio.token"_n};
+         static constexpr agrio::name ram_account{"agrio.ram"_n};
+         static constexpr agrio::name ramfee_account{"agrio.ramfee"_n};
+         static constexpr agrio::name stake_account{"agrio.stake"_n};
+         static constexpr agrio::name bpay_account{"agrio.bpay"_n};
+         static constexpr agrio::name vpay_account{"agrio.vpay"_n};
+         static constexpr agrio::name names_account{"agrio.names"_n};
+         static constexpr agrio::name saving_account{"agrio.saving"_n};
          static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
          static constexpr symbol ram_symbol     = symbol(symbol_code("RAM"), 0);
 
          system_contract( name s, name code, datastream<const char*> ds );
          ~system_contract();
 
-         static symbol get_core_symbol( name system_account = "eosio"_n ) {
+         static symbol get_core_symbol( name system_account = "agrio"_n ) {
             rammarket rm(system_account, system_account.value);
             const static auto sym = get_core_symbol( rm );
             return sym;
          }
 
          // Actions:
-         [[eosio::action]]
+         [[agrio::action]]
          void init( unsigned_int version, symbol core );
-         [[eosio::action]]
+         [[agrio::action]]
          void onblock( ignore<block_header> header );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setalimits( name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setacctram( name account, std::optional<int64_t> ram_bytes );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setacctnet( name account, std::optional<int64_t> net_weight );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setacctcpu( name account, std::optional<int64_t> cpu_weight );
 
          // functions defined in delegate_bandwidth.cpp
@@ -263,7 +263,7 @@ namespace eosiosystem {
           *  If transfer == true, then 'receiver' can unstake to their account
           *  Else 'from' can unstake at any time.
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void delegatebw( name from, name receiver,
                           asset stake_net_quantity, asset stake_cpu_quantity, bool transfer );
 
@@ -284,7 +284,7 @@ namespace eosiosystem {
           *  The 'from' account loses voting power as a result of this call and
           *  all producer tallies are updated.
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void undelegatebw( name from, name receiver,
                             asset unstake_net_quantity, asset unstake_cpu_quantity );
 
@@ -294,64 +294,64 @@ namespace eosiosystem {
           * tokens provided. An inline transfer from receiver to system contract of
           * tokens will be executed.
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void buyram( name payer, name receiver, asset quant );
-         [[eosio::action]]
+         [[agrio::action]]
          void buyrambytes( name payer, name receiver, uint32_t bytes );
 
          /**
           *  Reduces quota my bytes and then performs an inline transfer of tokens
           *  to receiver based upon the average purchase price of the original quota.
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void sellram( name account, int64_t bytes );
 
          /**
           *  This action is called after the delegation-period to claim all pending
           *  unstaked tokens belonging to owner
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void refund( name owner );
 
          // functions defined in voting.cpp
 
-         [[eosio::action]]
+         [[agrio::action]]
          void regproducer( const name producer, const public_key& producer_key, const std::string& url, uint16_t location );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void unregprod( const name producer );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setram( uint64_t max_ram_size );
-         [[eosio::action]]
+         [[agrio::action]]
          void setramrate( uint16_t bytes_per_block );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void voteproducer( const name voter, const name proxy, const std::vector<name>& producers );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void regproxy( const name proxy, bool isproxy );
 
-         [[eosio::action]]
-         void setparams( const eosio::blockchain_parameters& params );
+         [[agrio::action]]
+         void setparams( const agrio::blockchain_parameters& params );
 
          // functions defined in producer_pay.cpp
-         [[eosio::action]]
+         [[agrio::action]]
          void claimrewards( const name owner );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setpriv( name account, uint8_t is_priv );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void rmvproducer( name producer );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void updtrevision( uint8_t revision );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void bidname( name bidder, name newname, asset bid );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void bidrefund( name bidder, name newname );
 
       private:
@@ -359,12 +359,12 @@ namespace eosiosystem {
 
          static symbol get_core_symbol( const rammarket& rm ) {
             auto itr = rm.find(ramcore_symbol.raw());
-            eosio_assert(itr != rm.end(), "system contract must first be initialized");
+            agrio_assert(itr != rm.end(), "system contract must first be initialized");
             return itr->quote.balance.symbol;
          }
 
-         //defined in eosio.system.cpp
-         static eosio_global_state get_default_parameters();
+         //defined in agrio.system.cpp
+         static agrio_global_state get_default_parameters();
          static time_point current_time_point();
          static block_timestamp current_block_time();
 
@@ -390,4 +390,4 @@ namespace eosiosystem {
                                             double additional_shares_delta = 0.0, double shares_rate_delta = 0.0 );
    };
 
-} /// eosiosystem
+} /// agriosystem

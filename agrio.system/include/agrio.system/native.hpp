@@ -1,37 +1,37 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in agr/LICENSE.txt
  */
 #pragma once
 
-#include <eosiolib/action.hpp>
-#include <eosiolib/public_key.hpp>
-#include <eosiolib/print.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/producer_schedule.hpp>
-#include <eosiolib/contract.hpp>
-#include <eosiolib/ignore.hpp>
+#include <agriolib/action.hpp>
+#include <agriolib/public_key.hpp>
+#include <agriolib/print.hpp>
+#include <agriolib/privileged.h>
+#include <agriolib/producer_schedule.hpp>
+#include <agriolib/contract.hpp>
+#include <agriolib/ignore.hpp>
 
-namespace eosiosystem {
-   using eosio::name;
-   using eosio::permission_level;
-   using eosio::public_key;
-   using eosio::ignore;
+namespace agriosystem {
+   using agrio::name;
+   using agrio::permission_level;
+   using agrio::public_key;
+   using agrio::ignore;
 
    struct permission_level_weight {
       permission_level  permission;
       uint16_t          weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
+      AGRLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
    };
 
    struct key_weight {
-      eosio::public_key  key;
+      agrio::public_key  key;
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( key_weight, (key)(weight) )
+      AGRLIB_SERIALIZE( key_weight, (key)(weight) )
    };
 
    struct wait_weight {
@@ -39,7 +39,7 @@ namespace eosiosystem {
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
+      AGRLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
    };
 
    struct authority {
@@ -49,7 +49,7 @@ namespace eosiosystem {
       std::vector<wait_weight>              waits;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
+      AGRLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
    };
 
    struct block_header {
@@ -60,29 +60,29 @@ namespace eosiosystem {
       capi_checksum256                          transaction_mroot;
       capi_checksum256                          action_mroot;
       uint32_t                                  schedule_version = 0;
-      std::optional<eosio::producer_schedule>   new_producers;
+      std::optional<agrio::producer_schedule>   new_producers;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
+      AGRLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
                                      (schedule_version)(new_producers))
    };
 
 
-   struct [[eosio::table("abihash"), eosio::contract("eosio.system")]] abi_hash {
+   struct [[agrio::table("abihash"), agrio::contract("agrio.system")]] abi_hash {
       name              owner;
       capi_checksum256  hash;
       uint64_t primary_key()const { return owner.value; }
 
-      EOSLIB_SERIALIZE( abi_hash, (owner)(hash) )
+      AGRLIB_SERIALIZE( abi_hash, (owner)(hash) )
    };
 
    /*
     * Method parameters commented out to prevent generation of code that parses input data.
     */
-   class [[eosio::contract("eosio.system")]] native : public eosio::contract {
+   class [[agrio::contract("agrio.system")]] native : public agrio::contract {
       public:
 
-         using eosio::contract::contract;
+         using agrio::contract::contract;
 
          /**
           *  Called after a new account is created. This code enforces resource-limits rules
@@ -96,44 +96,44 @@ namespace eosiosystem {
           *     therefore, this method will execute an inline buyram from receiver for newacnt in
           *     an amount equal to the current new account creation fee.
           */
-         [[eosio::action]]
+         [[agrio::action]]
          void newaccount( name             creator,
                           name             name,
                           ignore<authority> owner,
                           ignore<authority> active);
 
 
-         [[eosio::action]]
+         [[agrio::action]]
          void updateauth(  ignore<name>  account,
                            ignore<name>  permission,
                            ignore<name>  parent,
                            ignore<authority> auth ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void deleteauth( ignore<name>  account,
                           ignore<name>  permission ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void linkauth(  ignore<name>    account,
                          ignore<name>    code,
                          ignore<name>    type,
                          ignore<name>    requirement  ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void unlinkauth( ignore<name>  account,
                           ignore<name>  code,
                           ignore<name>  type ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void canceldelay( ignore<permission_level> canceling_auth, ignore<capi_checksum256> trx_id ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setabi( name account, const std::vector<char>& abi );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setcode( name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code ) {}
    };
 }

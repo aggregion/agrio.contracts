@@ -1,10 +1,10 @@
 #pragma once
 
-#include <eosiolib/asset.hpp>
+#include <agriolib/asset.hpp>
 
-namespace eosiosystem {
-   using eosio::asset;
-   using eosio::symbol;
+namespace agriosystem {
+   using agrio::asset;
+   using agrio::symbol;
 
    typedef double real_type;
 
@@ -13,14 +13,14 @@ namespace eosiosystem {
     *  bancor exchange is entirely contained within this struct. There are no external
     *  side effects associated with using this API.
     */
-   struct [[eosio::table, eosio::contract("eosio.system")]] exchange_state {
+   struct [[agrio::table, agrio::contract("agrio.system")]] exchange_state {
       asset    supply;
 
       struct connector {
          asset balance;
          double weight = .5;
 
-         EOSLIB_SERIALIZE( connector, (balance)(weight) )
+         AGRLIB_SERIALIZE( connector, (balance)(weight) )
       };
 
       connector base;
@@ -32,9 +32,9 @@ namespace eosiosystem {
       asset convert_from_exchange( connector& c, asset in );
       asset convert( asset from, const symbol& to );
 
-      EOSLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
+      AGRLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
    };
 
-   typedef eosio::multi_index< "rammarket"_n, exchange_state > rammarket;
+   typedef agrio::multi_index< "rammarket"_n, exchange_state > rammarket;
 
-} /// namespace eosiosystem
+} /// namespace agriosystem

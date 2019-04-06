@@ -1,29 +1,29 @@
 #pragma once
-#include <eosiolib/action.hpp>
-#include <eosiolib/crypto.h>
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/privileged.hpp>
-#include <eosiolib/producer_schedule.hpp>
+#include <agriolib/action.hpp>
+#include <agriolib/crypto.h>
+#include <agriolib/agrio.hpp>
+#include <agriolib/privileged.hpp>
+#include <agriolib/producer_schedule.hpp>
 
-namespace eosio {
-   using eosio::permission_level;
-   using eosio::public_key;
-   using eosio::ignore;
+namespace agrio {
+   using agrio::permission_level;
+   using agrio::public_key;
+   using agrio::ignore;
 
    struct permission_level_weight {
       permission_level  permission;
       uint16_t          weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
+      AGRLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
    };
 
    struct key_weight {
-      eosio::public_key  key;
+      agrio::public_key  key;
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( key_weight, (key)(weight) )
+      AGRLIB_SERIALIZE( key_weight, (key)(weight) )
    };
 
    struct wait_weight {
@@ -31,7 +31,7 @@ namespace eosio {
       uint16_t           weight;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
+      AGRLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
    };
 
    struct authority {
@@ -41,7 +41,7 @@ namespace eosio {
       std::vector<wait_weight>              waits;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
+      AGRLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
    };
 
    struct block_header {
@@ -52,73 +52,73 @@ namespace eosio {
       capi_checksum256                          transaction_mroot;
       capi_checksum256                          action_mroot;
       uint32_t                                  schedule_version = 0;
-      std::optional<eosio::producer_schedule>   new_producers;
+      std::optional<agrio::producer_schedule>   new_producers;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
+      AGRLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
                                      (schedule_version)(new_producers))
    };
 
-   class [[eosio::contract("eosio.bios")]] bios : public contract {
+   class [[agrio::contract("agrio.bios")]] bios : public contract {
       public:
          using contract::contract;
-         [[eosio::action]]
+         [[agrio::action]]
          void newaccount( name             creator,
                           name             name,
                           ignore<authority> owner,
                           ignore<authority> active){}
 
 
-         [[eosio::action]]
+         [[agrio::action]]
          void updateauth(  ignore<name>  account,
                            ignore<name>  permission,
                            ignore<name>  parent,
                            ignore<authority> auth ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void deleteauth( ignore<name>  account,
                           ignore<name>  permission ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void linkauth(  ignore<name>    account,
                          ignore<name>    code,
                          ignore<name>    type,
                          ignore<name>    requirement  ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void unlinkauth( ignore<name>  account,
                           ignore<name>  code,
                           ignore<name>  type ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void canceldelay( ignore<permission_level> canceling_auth, ignore<capi_checksum256> trx_id ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setcode( name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code ) {}
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setpriv( name account, uint8_t is_priv ) {
             require_auth( _self );
             set_privileged( account.value, is_priv );
          }
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setalimits( name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight ) {
             require_auth( _self );
             set_resource_limits( account.value, ram_bytes, net_weight, cpu_weight );
          }
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setglimits( uint64_t ram, uint64_t net, uint64_t cpu ) {
             (void)ram; (void)net; (void)cpu;
             require_auth( _self );
          }
 
-         [[eosio::action]]
-         void setprods( std::vector<eosio::producer_key> schedule ) {
+         [[agrio::action]]
+         void setprods( std::vector<agrio::producer_key> schedule ) {
             (void)schedule; // schedule argument just forces the deserialization of the action data into vector<producer_key> (necessary check)
             require_auth( _self );
 
@@ -129,18 +129,18 @@ namespace eosio {
             set_proposed_producers(buffer, size);
          }
 
-         [[eosio::action]]
-         void setparams( const eosio::blockchain_parameters& params ) {
+         [[agrio::action]]
+         void setparams( const agrio::blockchain_parameters& params ) {
             require_auth( _self );
             set_blockchain_parameters( params );
          }
 
-         [[eosio::action]]
+         [[agrio::action]]
          void reqauth( name from ) {
             require_auth( from );
          }
 
-         [[eosio::action]]
+         [[agrio::action]]
          void setabi( name account, const std::vector<char>& abi ) {
             abi_hash_table table(_self, _self.value);
             auto itr = table.find( account.value );
@@ -156,15 +156,15 @@ namespace eosio {
             }
          }
 
-         struct [[eosio::table]] abi_hash {
+         struct [[agrio::table]] abi_hash {
             name              owner;
             capi_checksum256  hash;
             uint64_t primary_key()const { return owner.value; }
 
-            EOSLIB_SERIALIZE( abi_hash, (owner)(hash) )
+            AGRLIB_SERIALIZE( abi_hash, (owner)(hash) )
          };
 
-         typedef eosio::multi_index< "abihash"_n, abi_hash > abi_hash_table;
+         typedef agrio::multi_index< "abihash"_n, abi_hash > abi_hash_table;
    };
 
-} /// namespace eosio
+} /// namespace agrio

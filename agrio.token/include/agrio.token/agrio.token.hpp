@@ -1,46 +1,46 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in agr/LICENSE.txt
  */
 #pragma once
 
-#include <eosiolib/asset.hpp>
-#include <eosiolib/eosio.hpp>
+#include <agriolib/asset.hpp>
+#include <agriolib/agrio.hpp>
 
 #include <string>
 
-namespace eosiosystem {
+namespace agriosystem {
    class system_contract;
 }
 
-namespace eosio {
+namespace agrio {
 
    using std::string;
 
-   class [[eosio::contract("eosio.token")]] token : public contract {
+   class [[agrio::contract("agrio.token")]] token : public contract {
       public:
          using contract::contract;
 
-         [[eosio::action]]
+         [[agrio::action]]
          void create( name   issuer,
                       asset  maximum_supply);
 
-         [[eosio::action]]
+         [[agrio::action]]
          void issue( name to, asset quantity, string memo );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void retire( asset quantity, string memo );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void transfer( name    from,
                         name    to,
                         asset   quantity,
                         string  memo );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void open( name owner, const symbol& symbol, name ram_payer );
 
-         [[eosio::action]]
+         [[agrio::action]]
          void close( name owner, const symbol& symbol );
 
          static asset get_supply( name token_contract_account, symbol_code sym_code )
@@ -58,13 +58,13 @@ namespace eosio {
          }
 
       private:
-         struct [[eosio::table]] account {
+         struct [[agrio::table]] account {
             asset    balance;
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
-         struct [[eosio::table]] currency_stats {
+         struct [[agrio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
             name     issuer;
@@ -72,11 +72,11 @@ namespace eosio {
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
-         typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "stat"_n, currency_stats > stats;
+         typedef agrio::multi_index< "accounts"_n, account > accounts;
+         typedef agrio::multi_index< "stat"_n, currency_stats > stats;
 
          void sub_balance( name owner, asset value );
          void add_balance( name owner, asset value, name ram_payer );
    };
 
-} /// namespace eosio
+} /// namespace agrio

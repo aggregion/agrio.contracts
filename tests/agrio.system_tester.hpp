@@ -1,19 +1,19 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in agr/LICENSE.txt
  */
 #pragma once
 
-#include <eosio/testing/tester.hpp>
-#include <eosio/chain/abi_serializer.hpp>
+#include <agrio/testing/tester.hpp>
+#include <agrio/chain/abi_serializer.hpp>
 #include "contracts.hpp"
 #include "test_symbol.hpp"
 
 #include <fc/variant_object.hpp>
 #include <fstream>
 
-using namespace eosio::chain;
-using namespace eosio::testing;
+using namespace agrio::chain;
+using namespace agrio::testing;
 using namespace fc;
 
 using mvo = fc::mutable_variant_object;
@@ -27,23 +27,23 @@ using mvo = fc::mutable_variant_object;
 #endif
 
 
-namespace eosio_system {
+namespace agrio_system {
 
-class eosio_system_tester : public TESTER {
+class agrio_system_tester : public TESTER {
 public:
 
    void basic_setup() {
       produce_blocks( 2 );
 
-      create_accounts({ N(eosio.token), N(eosio.ram), N(eosio.ramfee), N(eosio.stake),
-               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names) });
+      create_accounts({ N(agrio.token), N(agrio.ram), N(agrio.ramfee), N(agrio.stake),
+               N(agrio.bpay), N(agrio.vpay), N(agrio.saving), N(agrio.names) });
 
 
       produce_blocks( 100 );
-      set_code( N(eosio.token), contracts::token_wasm());
-      set_abi( N(eosio.token), contracts::token_abi().data() );
+      set_code( N(agrio.token), contracts::token_wasm());
+      set_abi( N(agrio.token), contracts::token_abi().data() );
       {
-         const auto& accnt = control->db().get<account_object,by_name>( N(eosio.token) );
+         const auto& accnt = control->db().get<account_object,by_name>( N(agrio.token) );
          abi_def abi;
          BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
          token_abi_ser.set_abi(abi, abi_serializer_max_time);
@@ -52,9 +52,9 @@ public:
 
    void create_core_token( symbol core_symbol = symbol{CORE_SYM} ) {
       FC_ASSERT( core_symbol.precision() != 4, "create_core_token assumes precision of core token is 4" );
-      create_currency( N(eosio.token), config::system_account_name, asset(100000000000000, core_symbol) );
+      create_currency( N(agrio.token), config::system_account_name, asset(100000000000000, core_symbol) );
       issue(config::system_account_name, asset(10000000000000, core_symbol) );
-      BOOST_REQUIRE_EQUAL( asset(10000000000000, core_symbol), get_balance( "eosio", core_symbol ) );
+      BOOST_REQUIRE_EQUAL( asset(10000000000000, core_symbol), get_balance( "agrio", core_symbol ) );
    }
 
    void deploy_contract( bool call_init = true ) {
@@ -84,7 +84,7 @@ public:
       create_account_with_resources( N(bob111111111), config::system_account_name, core_sym::from_string("0.4500"), false );
       create_account_with_resources( N(carol1111111), config::system_account_name, core_sym::from_string("1.0000"), false );
 
-      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
+      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("agrio")  + get_balance("agrio.ramfee") + get_balance("agrio.stake") + get_balance("agrio.ram") );
    }
 
    enum class setup_level {
@@ -95,7 +95,7 @@ public:
       full
    };
 
-   eosio_system_tester( setup_level l = setup_level::full ) {
+   agrio_system_tester( setup_level l = setup_level::full ) {
       if( l == setup_level::none ) return;
 
       basic_setup();
@@ -111,7 +111,7 @@ public:
    }
 
    template<typename Lambda>
-   eosio_system_tester(Lambda setup) {
+   agrio_system_tester(Lambda setup) {
       setup(*this);
 
       basic_setup();
@@ -249,8 +249,8 @@ public:
       return push_transaction( trx );
    }
 
-   action_result buyram( const account_name& payer, account_name receiver, const asset& eosin ) {
-      return push_action( payer, N(buyram), mvo()( "payer",payer)("receiver",receiver)("quant",eosin) );
+   action_result buyram( const account_name& payer, account_name receiver, const asset& agrin ) {
+      return push_action( payer, N(buyram), mvo()( "payer",payer)("receiver",receiver)("quant",agrin) );
    }
    action_result buyrambytes( const account_name& payer, account_name receiver, uint32_t numbytes ) {
       return push_action( payer, N(buyrambytes), mvo()( "payer",payer)("receiver",receiver)("bytes",numbytes) );
@@ -366,7 +366,7 @@ public:
    }
 
    asset get_balance( const account_name& act, symbol balance_symbol = symbol{CORE_SYM} ) {
-      vector<char> data = get_row_by_account( N(eosio.token), act, N(accounts), balance_symbol.to_symbol_code().value );
+      vector<char> data = get_row_by_account( N(agrio.token), act, N(accounts), balance_symbol.to_symbol_code().value );
       return data.empty() ? asset(0, balance_symbol) : token_abi_ser.binary_to_variant("account", data, abi_serializer_max_time)["balance"].as<asset>();
    }
 
@@ -399,14 +399,14 @@ public:
    }
 
    void issue( name to, const asset& amount, name manager = config::system_account_name ) {
-      base_tester::push_action( N(eosio.token), N(issue), manager, mutable_variant_object()
+      base_tester::push_action( N(agrio.token), N(issue), manager, mutable_variant_object()
                                 ("to",      to )
                                 ("quantity", amount )
                                 ("memo", "")
                                 );
    }
    void transfer( name from, name to, const asset& amount, name manager = config::system_account_name ) {
-      base_tester::push_action( N(eosio.token), N(transfer), manager, mutable_variant_object()
+      base_tester::push_action( N(agrio.token), N(transfer), manager, mutable_variant_object()
                                 ("from",    from)
                                 ("to",      to )
                                 ("quantity", amount)
@@ -424,9 +424,9 @@ public:
    }
 
    fc::variant get_stats( const string& symbolname ) {
-      auto symb = eosio::chain::symbol::from_string(symbolname);
+      auto symb = agrio::chain::symbol::from_string(symbolname);
       auto symbol_code = symb.to_symbol_code().value;
-      vector<char> data = get_row_by_account( N(eosio.token), symbol_code, N(stat), symbol_code );
+      vector<char> data = get_row_by_account( N(agrio.token), symbol_code, N(stat), symbol_code );
       return data.empty() ? fc::variant() : token_abi_ser.binary_to_variant( "currency_stats", data, abi_serializer_max_time );
    }
 
@@ -441,17 +441,17 @@ public:
    fc::variant get_global_state() {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(global), N(global) );
       if (data.empty()) std::cout << "\nData is empty\n" << std::endl;
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state", data, abi_serializer_max_time );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "agrio_global_state", data, abi_serializer_max_time );
    }
 
    fc::variant get_global_state2() {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(global2), N(global2) );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state2", data, abi_serializer_max_time );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "agrio_global_state2", data, abi_serializer_max_time );
    }
 
    fc::variant get_global_state3() {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(global3), N(global3) );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state3", data, abi_serializer_max_time );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "agrio_global_state3", data, abi_serializer_max_time );
    }
 
    fc::variant get_refund_request( name account ) {
@@ -462,21 +462,21 @@ public:
    abi_serializer initialize_multisig() {
       abi_serializer msig_abi_ser;
       {
-         create_account_with_resources( N(eosio.msig), config::system_account_name );
-         BOOST_REQUIRE_EQUAL( success(), buyram( "eosio", "eosio.msig", core_sym::from_string("5000.0000") ) );
+         create_account_with_resources( N(agrio.msig), config::system_account_name );
+         BOOST_REQUIRE_EQUAL( success(), buyram( "agrio", "agrio.msig", core_sym::from_string("5000.0000") ) );
          produce_block();
 
          auto trace = base_tester::push_action(config::system_account_name, N(setpriv),
                                                config::system_account_name,  mutable_variant_object()
-                                               ("account", "eosio.msig")
+                                               ("account", "agrio.msig")
                                                ("is_priv", 1)
          );
 
-         set_code( N(eosio.msig), contracts::msig_wasm() );
-         set_abi( N(eosio.msig), contracts::msig_abi().data() );
+         set_code( N(agrio.msig), contracts::msig_wasm() );
+         set_abi( N(agrio.msig), contracts::msig_abi().data() );
 
          produce_blocks();
-         const auto& accnt = control->db().get<account_object,by_name>( N(eosio.msig) );
+         const auto& accnt = control->db().get<account_object,by_name>( N(agrio.msig) );
          abi_def msig_abi;
          BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, msig_abi), true);
          msig_abi_ser.set_abi(msig_abi, abi_serializer_max_time);
@@ -485,8 +485,8 @@ public:
    }
 
    vector<name> active_and_vote_producers() {
-      //stake more than 15% of total EOS supply to activate chain
-      transfer( "eosio", "alice1111111", core_sym::from_string("650000000.0000"), "eosio" );
+      //stake more than 15% of total AGR supply to activate chain
+      transfer( "agrio", "alice1111111", core_sym::from_string("650000000.0000"), "agrio" );
       BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_sym::from_string("300000000.0000"), core_sym::from_string("300000000.0000") ) );
 
       // create accounts {defproducera, defproducerb, ..., defproducerz} and register as producers
@@ -510,7 +510,7 @@ public:
                                             ("permission", name(config::active_name).to_string())
                                             ("parent", name(config::owner_name).to_string())
                                             ("auth",  authority(1, {key_weight{get_public_key( config::system_account_name, "active" ), 1}}, {
-                                                  permission_level_weight{{config::system_account_name, config::eosio_code_name}, 1},
+                                                  permission_level_weight{{config::system_account_name, config::agrio_code_name}, 1},
                                                      permission_level_weight{{config::producers_account_name,  config::active_name}, 1}
                                                }
                                             ))
@@ -609,8 +609,8 @@ inline fc::mutable_variant_object proxy( account_name acct ) {
    return voter( acct )( "is_proxy", 1 );
 }
 
-inline uint64_t M( const string& eos_str ) {
-   return core_sym::from_string( eos_str ).get_amount();
+inline uint64_t M( const string& agr_str ) {
+   return core_sym::from_string( agr_str ).get_amount();
 }
 
 }

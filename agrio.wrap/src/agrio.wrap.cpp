@@ -1,6 +1,6 @@
-#include <eosio.wrap/eosio.wrap.hpp>
+#include <agrio.wrap/agrio.wrap.hpp>
 
-namespace eosio {
+namespace agrio {
 
 void wrap::exec( ignore<name>, ignore<transaction> ) {
    require_auth( _self );
@@ -13,6 +13,6 @@ void wrap::exec( ignore<name>, ignore<transaction> ) {
    send_deferred( (uint128_t(executer.value) << 64) | current_time(), executer.value, _ds.pos(), _ds.remaining() );
 }
 
-} /// namespace eosio
+} /// namespace agrio
 
-EOSIO_DISPATCH( eosio::wrap, (exec) )
+AGRIO_DISPATCH( agrio::wrap, (exec) )

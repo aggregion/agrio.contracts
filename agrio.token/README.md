@@ -1,7 +1,7 @@
-eosio.token
+agrio.token
 -----------
 
-This eosio contract allows users to create, issue, and manage tokens on
-eosio based blockchains.
+This agrio contract allows users to create, issue, and manage tokens on
+agrio based blockchains.
 
 

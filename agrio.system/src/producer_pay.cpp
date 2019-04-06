@@ -1,8 +1,8 @@
-#include <eosio.system/eosio.system.hpp>
+#include <agrio.system/agrio.system.hpp>
 
-#include <eosio.token/eosio.token.hpp>
+#include <agrio.token/agrio.token.hpp>
 
-namespace eosiosystem {
+namespace agriosystem {
 
    const int64_t  min_pervote_daily_pay = 100'0000;
    const int64_t  min_activated_stake   = 150'000'000'0000;
@@ -17,7 +17,7 @@ namespace eosiosystem {
    const int64_t  useconds_per_year     = seconds_per_year*1000000ll;
 
    void system_contract::onblock( ignore<block_header> ) {
-      using namespace eosio;
+      using namespace agrio;
 
       require_auth(_self);
 
@@ -73,21 +73,21 @@ namespace eosiosystem {
       }
    }
 
-   using namespace eosio;
+   using namespace agrio;
    void system_contract::claimrewards( const name owner ) {
       require_auth( owner );
 
       const auto& prod = _producers.get( owner.value );
-      eosio_assert( prod.active(), "producer does not have an active key" );
+      agrio_assert( prod.active(), "producer does not have an active key" );
 
-      eosio_assert( _gstate.total_activated_stake >= min_activated_stake,
+      agrio_assert( _gstate.total_activated_stake >= min_activated_stake,
                     "cannot claim rewards until the chain is activated (at least 15% of all tokens participate in voting)" );
 
       const auto ct = current_time_point();
 
-      eosio_assert( ct - prod.last_claim_time > microseconds(useconds_per_day), "already claimed rewards within past day" );
+      agrio_assert( ct - prod.last_claim_time > microseconds(useconds_per_day), "already claimed rewards within past day" );
 
-      const asset token_supply   = eosio::token::get_supply(token_account, core_symbol().code() );
+      const asset token_supply   = agrio::token::get_supply(token_account, core_symbol().code() );
       const auto usecs_since_last_fill = (ct - _gstate.last_pervote_bucket_fill).count();
 
       if( usecs_since_last_fill > 0 && _gstate.last_pervote_bucket_fill > time_point() ) {
@@ -98,22 +98,22 @@ namespace eosiosystem {
          auto to_per_block_pay = to_producers / 4;
          auto to_per_vote_pay  = to_producers - to_per_block_pay;
 
-         INLINE_ACTION_SENDER(eosio::token, issue)(
+         INLINE_ACTION_SENDER(agrio::token, issue)(
             token_account, { {_self, active_permission} },
             { _self, asset(new_tokens, core_symbol()), std::string("issue tokens for producer pay and savings") }
          );
 
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {_self, active_permission} },
             { _self, saving_account, asset(to_savings, core_symbol()), "unallocated inflation" }
          );
 
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {_self, active_permission} },
             { _self, bpay_account, asset(to_per_block_pay, core_symbol()), "fund per-block bucket" }
          );
 
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {_self, active_permission} },
             { _self, vpay_account, asset(to_per_vote_pay, core_symbol()), "fund per-vote bucket" }
          );
@@ -186,17 +186,17 @@ namespace eosiosystem {
       });
 
       if( producer_per_block_pay > 0 ) {
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {bpay_account, active_permission}, {owner, active_permission} },
             { bpay_account, owner, asset(producer_per_block_pay, core_symbol()), std::string("producer block pay") }
          );
       }
       if( producer_per_vote_pay > 0 ) {
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {vpay_account, active_permission}, {owner, active_permission} },
             { vpay_account, owner, asset(producer_per_vote_pay, core_symbol()), std::string("producer vote pay") }
          );
       }
    }
 
-} //namespace eosiosystem
+} //namespace agriosystem

@@ -1,3 +1,3 @@
-#include <eosio.bios/eosio.bios.hpp>
+#include <agrio.bios/agrio.bios.hpp>
 
-EOSIO_DISPATCH( eosio::bios, (setpriv)(setalimits)(setglimits)(setprods)(setparams)(reqauth)(setabi) )
+AGRIO_DISPATCH( agrio::bios, (setpriv)(setalimits)(setglimits)(setprods)(setparams)(reqauth)(setabi) )

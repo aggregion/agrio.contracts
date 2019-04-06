@@ -1,6 +1,6 @@
-#include <eosio.system/eosio.system.hpp>
-#include <eosiolib/dispatcher.hpp>
-#include <eosiolib/crypto.h>
+#include <agrio.system/agrio.system.hpp>
+#include <agriolib/dispatcher.hpp>
+#include <agriolib/crypto.h>
 
 #include "producer_pay.cpp"
 #include "delegate_bandwidth.cpp"
@@ -8,7 +8,7 @@
 #include "exchange_state.cpp"
 
 
-namespace eosiosystem {
+namespace agriosystem {
 
    system_contract::system_contract( name s, name code, datastream<const char*> ds )
    :native(s,code,ds),
@@ -23,12 +23,12 @@ namespace eosiosystem {
 
       //print( "construct system\n" );
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();
-      _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
-      _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
+      _gstate2 = _global2.exists() ? _global2.get() : agrio_global_state2{};
+      _gstate3 = _global3.exists() ? _global3.get() : agrio_global_state3{};
    }
 
-   eosio_global_state system_contract::get_default_parameters() {
-      eosio_global_state dp;
+   agrio_global_state system_contract::get_default_parameters() {
+      agrio_global_state dp;
       get_blockchain_parameters(dp);
       return dp;
    }
@@ -57,9 +57,9 @@ namespace eosiosystem {
    void system_contract::setram( uint64_t max_ram_size ) {
       require_auth( _self );
 
-      eosio_assert( _gstate.max_ram_size < max_ram_size, "ram may only be increased" ); /// decreasing ram might result market maker issues
-      eosio_assert( max_ram_size < 1024ll*1024*1024*1024*1024, "ram size is unrealistic" );
-      eosio_assert( max_ram_size > _gstate.total_ram_bytes_reserved, "attempt to set max below reserved" );
+      agrio_assert( _gstate.max_ram_size < max_ram_size, "ram may only be increased" ); /// decreasing ram might result market maker issues
+      agrio_assert( max_ram_size < 1024ll*1024*1024*1024*1024, "ram size is unrealistic" );
+      agrio_assert( max_ram_size > _gstate.total_ram_bytes_reserved, "attempt to set max below reserved" );
 
       auto delta = int64_t(max_ram_size) - int64_t(_gstate.max_ram_size);
       auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -106,10 +106,10 @@ namespace eosiosystem {
       _gstate2.new_ram_per_block = bytes_per_block;
    }
 
-   void system_contract::setparams( const eosio::blockchain_parameters& params ) {
+   void system_contract::setparams( const agrio::blockchain_parameters& params ) {
       require_auth( _self );
-      (eosio::blockchain_parameters&)(_gstate) = params;
-      eosio_assert( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
+      (agrio::blockchain_parameters&)(_gstate) = params;
+      agrio_assert( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
       set_blockchain_parameters( params );
    }
 
@@ -123,14 +123,14 @@ namespace eosiosystem {
 
       user_resources_table userres( _self, account.value );
       auto ritr = userres.find( account.value );
-      eosio_assert( ritr == userres.end(), "only supports unlimited accounts" );
+      agrio_assert( ritr == userres.end(), "only supports unlimited accounts" );
 
       auto vitr = _voters.find( account.value );
       if( vitr != _voters.end() ) {
          bool ram_managed = has_field( vitr->flags1, voter_info::flags1_fields::ram_managed );
          bool net_managed = has_field( vitr->flags1, voter_info::flags1_fields::net_managed );
          bool cpu_managed = has_field( vitr->flags1, voter_info::flags1_fields::cpu_managed );
-         eosio_assert( !(ram_managed || net_managed || cpu_managed), "cannot use setalimits on an account with managed resources" );
+         agrio_assert( !(ram_managed || net_managed || cpu_managed), "cannot use setalimits on an account with managed resources" );
       }
 
       set_resource_limits( account.value, ram, net, cpu );
@@ -146,7 +146,7 @@ namespace eosiosystem {
 
       if( !ram_bytes ) {
          auto vitr = _voters.find( account.value );
-         eosio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::ram_managed ),
+         agrio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::ram_managed ),
                        "RAM of account is already unmanaged" );
 
          user_resources_table userres( _self, account.value );
@@ -161,7 +161,7 @@ namespace eosiosystem {
             v.flags1 = set_field( v.flags1, voter_info::flags1_fields::ram_managed, false );
          });
       } else {
-         eosio_assert( *ram_bytes >= 0, "not allowed to set RAM limit to unlimited" );
+         agrio_assert( *ram_bytes >= 0, "not allowed to set RAM limit to unlimited" );
 
          auto vitr = _voters.find( account.value );
          if ( vitr != _voters.end() ) {
@@ -191,7 +191,7 @@ namespace eosiosystem {
 
       if( !net_weight ) {
          auto vitr = _voters.find( account.value );
-         eosio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::net_managed ),
+         agrio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::net_managed ),
                        "Network bandwidth of account is already unmanaged" );
 
          user_resources_table userres( _self, account.value );
@@ -205,7 +205,7 @@ namespace eosiosystem {
             v.flags1 = set_field( v.flags1, voter_info::flags1_fields::net_managed, false );
          });
       } else {
-         eosio_assert( *net_weight >= -1, "invalid value for net_weight" );
+         agrio_assert( *net_weight >= -1, "invalid value for net_weight" );
 
          auto vitr = _voters.find( account.value );
          if ( vitr != _voters.end() ) {
@@ -235,7 +235,7 @@ namespace eosiosystem {
 
       if( !cpu_weight ) {
          auto vitr = _voters.find( account.value );
-         eosio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::cpu_managed ),
+         agrio_assert( vitr != _voters.end() && has_field( vitr->flags1, voter_info::flags1_fields::cpu_managed ),
                        "CPU bandwidth of account is already unmanaged" );
 
          user_resources_table userres( _self, account.value );
@@ -249,7 +249,7 @@ namespace eosiosystem {
             v.flags1 = set_field( v.flags1, voter_info::flags1_fields::cpu_managed, false );
          });
       } else {
-         eosio_assert( *cpu_weight >= -1, "invalid value for cpu_weight" );
+         agrio_assert( *cpu_weight >= -1, "invalid value for cpu_weight" );
 
          auto vitr = _voters.find( account.value );
          if ( vitr != _voters.end() ) {
@@ -272,7 +272,7 @@ namespace eosiosystem {
    void system_contract::rmvproducer( name producer ) {
       require_auth( _self );
       auto prod = _producers.find( producer.value );
-      eosio_assert( prod != _producers.end(), "producer not found" );
+      agrio_assert( prod != _producers.end(), "producer not found" );
       _producers.modify( prod, same_payer, [&](auto& p) {
             p.deactivate();
          });
@@ -280,25 +280,25 @@ namespace eosiosystem {
 
    void system_contract::updtrevision( uint8_t revision ) {
       require_auth( _self );
-      eosio_assert( _gstate2.revision < 255, "can not increment revision" ); // prevent wrap around
-      eosio_assert( revision == _gstate2.revision + 1, "can only increment revision by one" );
-      eosio_assert( revision <= 1, // set upper bound to greatest revision supported in the code
+      agrio_assert( _gstate2.revision < 255, "can not increment revision" ); // prevent wrap around
+      agrio_assert( revision == _gstate2.revision + 1, "can only increment revision by one" );
+      agrio_assert( revision <= 1, // set upper bound to greatest revision supported in the code
                     "specified revision is not yet supported by the code" );
       _gstate2.revision = revision;
    }
 
    void system_contract::bidname( name bidder, name newname, asset bid ) {
       require_auth( bidder );
-      eosio_assert( newname.suffix() == newname, "you can only bid on top-level suffix" );
+      agrio_assert( newname.suffix() == newname, "you can only bid on top-level suffix" );
 
-      eosio_assert( (bool)newname, "the empty name is not a valid account name to bid on" );
-      eosio_assert( (newname.value & 0xFull) == 0, "13 character names are not valid account names to bid on" );
-      eosio_assert( (newname.value & 0x1F0ull) == 0, "accounts with 12 character names and no dots can be created without bidding required" );
-      eosio_assert( !is_account( newname ), "account already exists" );
-      eosio_assert( bid.symbol == core_symbol(), "asset must be system token" );
-      eosio_assert( bid.amount > 0, "insufficient bid" );
+      agrio_assert( (bool)newname, "the empty name is not a valid account name to bid on" );
+      agrio_assert( (newname.value & 0xFull) == 0, "13 character names are not valid account names to bid on" );
+      agrio_assert( (newname.value & 0x1F0ull) == 0, "accounts with 12 character names and no dots can be created without bidding required" );
+      agrio_assert( !is_account( newname ), "account already exists" );
+      agrio_assert( bid.symbol == core_symbol(), "asset must be system token" );
+      agrio_assert( bid.amount > 0, "insufficient bid" );
 
-      INLINE_ACTION_SENDER(eosio::token, transfer)(
+      INLINE_ACTION_SENDER(agrio::token, transfer)(
          token_account, { {bidder, active_permission} },
          { bidder, names_account, bid, std::string("bid name ")+ newname.to_string() }
       );
@@ -314,9 +314,9 @@ namespace eosiosystem {
             b.last_bid_time = current_time_point();
          });
       } else {
-         eosio_assert( current->high_bid > 0, "this auction has already closed" );
-         eosio_assert( bid.amount - current->high_bid > (current->high_bid / 10), "must increase bid by 10%" );
-         eosio_assert( current->high_bidder != bidder, "account is already highest bidder" );
+         agrio_assert( current->high_bid > 0, "this auction has already closed" );
+         agrio_assert( bid.amount - current->high_bid > (current->high_bid / 10), "must increase bid by 10%" );
+         agrio_assert( current->high_bidder != bidder, "account is already highest bidder" );
 
          bid_refund_table refunds_table(_self, newname.value);
 
@@ -353,8 +353,8 @@ namespace eosiosystem {
    void system_contract::bidrefund( name bidder, name newname ) {
       bid_refund_table refunds_table(_self, newname.value);
       auto it = refunds_table.find( bidder.value );
-      eosio_assert( it != refunds_table.end(), "refund not found" );
-      INLINE_ACTION_SENDER(eosio::token, transfer)(
+      agrio_assert( it != refunds_table.end(), "refund not found" );
+      INLINE_ACTION_SENDER(agrio::token, transfer)(
          token_account, { {names_account, active_permission}, {bidder, active_permission} },
          { names_account, bidder, asset(it->amount), std::string("refund bid on name ")+(name{newname}).to_string() }
       );
@@ -388,12 +388,12 @@ namespace eosiosystem {
             if( suffix == newact ) {
                name_bid_table bids(_self, _self.value);
                auto current = bids.find( newact.value );
-               eosio_assert( current != bids.end(), "no active bid for name" );
-               eosio_assert( current->high_bidder == creator, "only highest bidder can claim" );
-               eosio_assert( current->high_bid < 0, "auction for name is not closed yet" );
+               agrio_assert( current != bids.end(), "no active bid for name" );
+               agrio_assert( current->high_bidder == creator, "only highest bidder can claim" );
+               agrio_assert( current->high_bid < 0, "auction for name is not closed yet" );
                bids.erase( current );
             } else {
-               eosio_assert( creator == suffix, "only suffix may create this account" );
+               agrio_assert( creator == suffix, "only suffix may create this account" );
             }
          }
       }
@@ -410,7 +410,7 @@ namespace eosiosystem {
    }
 
    void native::setabi( name acnt, const std::vector<char>& abi ) {
-      eosio::multi_index< "abihash"_n, abi_hash >  table(_self, _self.value);
+      agrio::multi_index< "abihash"_n, abi_hash >  table(_self, _self.value);
       auto itr = table.find( acnt.value );
       if( itr == table.end() ) {
          table.emplace( acnt, [&]( auto& row ) {
@@ -426,15 +426,15 @@ namespace eosiosystem {
 
    void system_contract::init( unsigned_int version, symbol core ) {
       require_auth( _self );
-      eosio_assert( version.value == 0, "unsupported version for init action" );
+      agrio_assert( version.value == 0, "unsupported version for init action" );
 
       auto itr = _rammarket.find(ramcore_symbol.raw());
-      eosio_assert( itr == _rammarket.end(), "system contract has already been initialized" );
+      agrio_assert( itr == _rammarket.end(), "system contract has already been initialized" );
 
-      auto system_token_supply   = eosio::token::get_supply(token_account, core.code() );
-      eosio_assert( system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)" );
+      auto system_token_supply   = agrio::token::get_supply(token_account, core.code() );
+      agrio_assert( system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)" );
 
-      eosio_assert( system_token_supply.amount > 0, "system token supply must be greater than 0" );
+      agrio_assert( system_token_supply.amount > 0, "system token supply must be greater than 0" );
       _rammarket.emplace( _self, [&]( auto& m ) {
          m.supply.amount = 100000000000000ll;
          m.supply.symbol = ramcore_symbol;
@@ -444,13 +444,13 @@ namespace eosiosystem {
          m.quote.balance.symbol = core;
       });
    }
-} /// eosio.system
+} /// agrio.system
 
 
-EOSIO_DISPATCH( eosiosystem::system_contract,
-     // native.hpp (newaccount definition is actually in eosio.system.cpp)
+AGRIO_DISPATCH( agriosystem::system_contract,
+     // native.hpp (newaccount definition is actually in agrio.system.cpp)
      (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
-     // eosio.system.cpp
+     // agrio.system.cpp
      (init)(setram)(setramrate)(setparams)(setpriv)(setalimits)(setacctram)(setacctnet)(setacctcpu)
      (rmvproducer)(updtrevision)(bidname)(bidrefund)
      // delegate_bandwidth.cpp

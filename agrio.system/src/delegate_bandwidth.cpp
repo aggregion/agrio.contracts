@@ -1,37 +1,37 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in agr/LICENSE.txt
  */
-#include <eosio.system/eosio.system.hpp>
+#include <agrio.system/agrio.system.hpp>
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/print.hpp>
-#include <eosiolib/datastream.hpp>
-#include <eosiolib/serialize.hpp>
-#include <eosiolib/multi_index.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/transaction.hpp>
+#include <agriolib/agrio.hpp>
+#include <agriolib/print.hpp>
+#include <agriolib/datastream.hpp>
+#include <agriolib/serialize.hpp>
+#include <agriolib/multi_index.hpp>
+#include <agriolib/privileged.h>
+#include <agriolib/transaction.hpp>
 
-#include <eosio.token/eosio.token.hpp>
+#include <agrio.token/agrio.token.hpp>
 
 
 #include <cmath>
 #include <map>
 
-namespace eosiosystem {
-   using eosio::asset;
-   using eosio::indexed_by;
-   using eosio::const_mem_fun;
-   using eosio::print;
-   using eosio::permission_level;
-   using eosio::time_point_sec;
+namespace agriosystem {
+   using agrio::asset;
+   using agrio::indexed_by;
+   using agrio::const_mem_fun;
+   using agrio::print;
+   using agrio::permission_level;
+   using agrio::time_point_sec;
    using std::map;
    using std::pair;
 
    static constexpr uint32_t refund_delay_sec = 3*24*3600;
    static constexpr int64_t  ram_gift_bytes = 1400;
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
+   struct [[agrio::table, agrio::contract("agrio.system")]] user_resources {
       name          owner;
       asset         net_weight;
       asset         cpu_weight;
@@ -40,14 +40,14 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
+      AGRLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
    };
 
 
    /**
     *  Every user 'from' has a scope/table that uses every receipient 'to' as the primary key.
     */
-   struct [[eosio::table, eosio::contract("eosio.system")]] delegated_bandwidth {
+   struct [[agrio::table, agrio::contract("agrio.system")]] delegated_bandwidth {
       name          from;
       name          to;
       asset         net_weight;
@@ -56,29 +56,29 @@ namespace eosiosystem {
       uint64_t  primary_key()const { return to.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( delegated_bandwidth, (from)(to)(net_weight)(cpu_weight) )
+      AGRLIB_SERIALIZE( delegated_bandwidth, (from)(to)(net_weight)(cpu_weight) )
 
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] refund_request {
+   struct [[agrio::table, agrio::contract("agrio.system")]] refund_request {
       name            owner;
       time_point_sec  request_time;
-      eosio::asset    net_amount;
-      eosio::asset    cpu_amount;
+      agrio::asset    net_amount;
+      agrio::asset    cpu_amount;
 
       uint64_t  primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( refund_request, (owner)(request_time)(net_amount)(cpu_amount) )
+      AGRLIB_SERIALIZE( refund_request, (owner)(request_time)(net_amount)(cpu_amount) )
    };
 
    /**
     *  These tables are designed to be constructed in the scope of the relevant user, this
     *  facilitates simpler API for per-user queries
     */
-   typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
-   typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
-   typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
+   typedef agrio::multi_index< "userres"_n, user_resources >      user_resources_table;
+   typedef agrio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
+   typedef agrio::multi_index< "refunds"_n, refund_request >      refunds_table;
 
 
 
@@ -89,9 +89,9 @@ namespace eosiosystem {
 
       auto itr = _rammarket.find(ramcore_symbol.raw());
       auto tmp = *itr;
-      auto eosout = tmp.convert( asset(bytes, ram_symbol), core_symbol() );
+      auto agrout = tmp.convert( asset(bytes, ram_symbol), core_symbol() );
 
-      buyram( payer, receiver, eosout );
+      buyram( payer, receiver, agrout );
    }
 
 
@@ -108,8 +108,8 @@ namespace eosiosystem {
       require_auth( payer );
       update_ram_supply();
 
-      eosio_assert( quant.symbol == core_symbol(), "must buy ram with core token" );
-      eosio_assert( quant.amount > 0, "must purchase a positive amount" );
+      agrio_assert( quant.symbol == core_symbol(), "must buy ram with core token" );
+      agrio_assert( quant.amount > 0, "must purchase a positive amount" );
 
       auto fee = quant;
       fee.amount = ( fee.amount + 199 ) / 200; /// .5% fee (round up)
@@ -121,13 +121,13 @@ namespace eosiosystem {
       // quant_after_fee.amount should be > 0 if quant.amount > 1.
       // If quant.amount == 1, then quant_after_fee.amount == 0 and the next inline transfer will fail causing the buyram action to fail.
 
-      INLINE_ACTION_SENDER(eosio::token, transfer)(
+      INLINE_ACTION_SENDER(agrio::token, transfer)(
          token_account, { {payer, active_permission}, {ram_account, active_permission} },
          { payer, ram_account, quant_after_fee, std::string("buy ram") }
       );
 
       if( fee.amount > 0 ) {
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {payer, active_permission} },
             { payer, ramfee_account, fee, std::string("ram fee") }
          );
@@ -140,7 +140,7 @@ namespace eosiosystem {
           bytes_out = es.convert( quant_after_fee,  ram_symbol ).amount;
       });
 
-      eosio_assert( bytes_out > 0, "must reserve a positive amount" );
+      agrio_assert( bytes_out > 0, "must reserve a positive amount" );
 
       _gstate.total_ram_bytes_reserved += uint64_t(bytes_out);
       _gstate.total_ram_stake          += quant_after_fee.amount;
@@ -178,12 +178,12 @@ namespace eosiosystem {
       require_auth( account );
       update_ram_supply();
 
-      eosio_assert( bytes > 0, "cannot sell negative byte" );
+      agrio_assert( bytes > 0, "cannot sell negative byte" );
 
       user_resources_table  userres( _self, account.value );
       auto res_itr = userres.find( account.value );
-      eosio_assert( res_itr != userres.end(), "no resource row" );
-      eosio_assert( res_itr->ram_bytes >= bytes, "insufficient quota" );
+      agrio_assert( res_itr != userres.end(), "no resource row" );
+      agrio_assert( res_itr->ram_bytes >= bytes, "insufficient quota" );
 
       asset tokens_out;
       auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -192,13 +192,13 @@ namespace eosiosystem {
           tokens_out = es.convert( asset(bytes, ram_symbol), core_symbol());
       });
 
-      eosio_assert( tokens_out.amount > 1, "token amount received from selling ram is too low" );
+      agrio_assert( tokens_out.amount > 1, "token amount received from selling ram is too low" );
 
       _gstate.total_ram_bytes_reserved -= static_cast<decltype(_gstate.total_ram_bytes_reserved)>(bytes); // bytes > 0 is asserted above
       _gstate.total_ram_stake          -= tokens_out.amount;
 
       //// this shouldn't happen, but just in case it does we should prevent it
-      eosio_assert( _gstate.total_ram_stake >= 0, "error, attempt to unstake more tokens than previously staked" );
+      agrio_assert( _gstate.total_ram_stake >= 0, "error, attempt to unstake more tokens than previously staked" );
 
       userres.modify( res_itr, account, [&]( auto& res ) {
           res.ram_bytes -= bytes;
@@ -211,7 +211,7 @@ namespace eosiosystem {
          set_resource_limits( res_itr->owner.value, res_itr->ram_bytes + ram_gift_bytes, net, cpu );
       }
 
-      INLINE_ACTION_SENDER(eosio::token, transfer)(
+      INLINE_ACTION_SENDER(agrio::token, transfer)(
          token_account, { {ram_account, active_permission}, {account, active_permission} },
          { ram_account, account, asset(tokens_out), std::string("sell ram") }
       );
@@ -219,7 +219,7 @@ namespace eosiosystem {
       auto fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
       // since tokens_out.amount was asserted to be at least 2 earlier, fee.amount < tokens_out.amount
       if( fee > 0 ) {
-         INLINE_ACTION_SENDER(eosio::token, transfer)(
+         INLINE_ACTION_SENDER(agrio::token, transfer)(
             token_account, { {account, active_permission} },
             { account, ramfee_account, asset(fee, core_symbol()), std::string("sell ram fee") }
          );
@@ -231,15 +231,15 @@ namespace eosiosystem {
       const int64_t max_claimable = 100'000'000'0000ll;
       const int64_t claimable = int64_t(max_claimable * double(now()-base_time) / (10*seconds_per_year) );
 
-      eosio_assert( max_claimable - claimable <= stake, "b1 can only claim their tokens over 10 years" );
+      agrio_assert( max_claimable - claimable <= stake, "b1 can only claim their tokens over 10 years" );
    }
 
    void system_contract::changebw( name from, name receiver,
                                    const asset stake_net_delta, const asset stake_cpu_delta, bool transfer )
    {
       require_auth( from );
-      eosio_assert( stake_net_delta.amount != 0 || stake_cpu_delta.amount != 0, "should stake non-zero amount" );
-      eosio_assert( std::abs( (stake_net_delta + stake_cpu_delta).amount )
+      agrio_assert( stake_net_delta.amount != 0 || stake_cpu_delta.amount != 0, "should stake non-zero amount" );
+      agrio_assert( std::abs( (stake_net_delta + stake_cpu_delta).amount )
                      >= std::max( std::abs( stake_net_delta.amount ), std::abs( stake_cpu_delta.amount ) ),
                     "net and cpu deltas cannot be opposite signs" );
 
@@ -266,8 +266,8 @@ namespace eosiosystem {
                   dbo.cpu_weight    += stake_cpu_delta;
                });
          }
-         eosio_assert( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
-         eosio_assert( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
+         agrio_assert( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
+         agrio_assert( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
          if ( itr->net_weight.amount == 0 && itr->cpu_weight.amount == 0 ) {
             del_tbl.erase( itr );
          }
@@ -289,8 +289,8 @@ namespace eosiosystem {
                   tot.cpu_weight    += stake_cpu_delta;
                });
          }
-         eosio_assert( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
-         eosio_assert( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
+         agrio_assert( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
+         agrio_assert( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
 
          {
             bool ram_managed = false;
@@ -321,7 +321,7 @@ namespace eosiosystem {
       } // tot_itr can be invalid, should go out of scope
 
       // create refund or update from existing refund
-      if ( stake_account != source_stake_from ) { //for eosio both transfer and refund make no sense
+      if ( stake_account != source_stake_from ) { //for agrio both transfer and refund make no sense
          refunds_table refunds_tbl( _self, from.value );
          auto req = refunds_tbl.find( from.value );
 
@@ -358,8 +358,8 @@ namespace eosiosystem {
                   }
                });
 
-               eosio_assert( 0 <= req->net_amount.amount, "negative net refund amount" ); //should never happen
-               eosio_assert( 0 <= req->cpu_amount.amount, "negative cpu refund amount" ); //should never happen
+               agrio_assert( 0 <= req->net_amount.amount, "negative net refund amount" ); //should never happen
+               agrio_assert( 0 <= req->cpu_amount.amount, "negative cpu refund amount" ); //should never happen
 
                if ( req->net_amount.amount == 0 && req->cpu_amount.amount == 0 ) {
                   refunds_tbl.erase( req );
@@ -389,7 +389,7 @@ namespace eosiosystem {
          } /// end if is_delegating_to_self || is_undelegating
 
          if ( need_deferred_trx ) {
-            eosio::transaction out;
+            agrio::transaction out;
             out.actions.emplace_back( permission_level{from, active_permission},
                                       _self, "refund"_n,
                                       from
@@ -403,7 +403,7 @@ namespace eosiosystem {
 
          auto transfer_amount = net_balance + cpu_balance;
          if ( 0 < transfer_amount.amount ) {
-            INLINE_ACTION_SENDER(eosio::token, transfer)(
+            INLINE_ACTION_SENDER(agrio::token, transfer)(
                token_account, { {source_stake_from, active_permission} },
                { source_stake_from, stake_account, asset(transfer_amount), std::string("stake bandwidth") }
             );
@@ -424,7 +424,7 @@ namespace eosiosystem {
                   v.staked += total_update.amount;
                });
          }
-         eosio_assert( 0 <= from_voter->staked, "stake for voting cannot be negative");
+         agrio_assert( 0 <= from_voter->staked, "stake for voting cannot be negative");
          if( from == "b1"_n ) {
             validate_b1_vesting( from_voter->staked );
          }
@@ -440,10 +440,10 @@ namespace eosiosystem {
                                      asset stake_cpu_quantity, bool transfer )
    {
       asset zero_asset( 0, core_symbol() );
-      eosio_assert( stake_cpu_quantity >= zero_asset, "must stake a positive amount" );
-      eosio_assert( stake_net_quantity >= zero_asset, "must stake a positive amount" );
-      eosio_assert( stake_net_quantity.amount + stake_cpu_quantity.amount > 0, "must stake a positive amount" );
-      eosio_assert( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
+      agrio_assert( stake_cpu_quantity >= zero_asset, "must stake a positive amount" );
+      agrio_assert( stake_net_quantity >= zero_asset, "must stake a positive amount" );
+      agrio_assert( stake_net_quantity.amount + stake_cpu_quantity.amount > 0, "must stake a positive amount" );
+      agrio_assert( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
 
       changebw( from, receiver, stake_net_quantity, stake_cpu_quantity, transfer);
    } // delegatebw
@@ -452,10 +452,10 @@ namespace eosiosystem {
                                        asset unstake_net_quantity, asset unstake_cpu_quantity )
    {
       asset zero_asset( 0, core_symbol() );
-      eosio_assert( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
-      eosio_assert( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
-      eosio_assert( unstake_cpu_quantity.amount + unstake_net_quantity.amount > 0, "must unstake a positive amount" );
-      eosio_assert( _gstate.total_activated_stake >= min_activated_stake,
+      agrio_assert( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
+      agrio_assert( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
+      agrio_assert( unstake_cpu_quantity.amount + unstake_net_quantity.amount > 0, "must unstake a positive amount" );
+      agrio_assert( _gstate.total_activated_stake >= min_activated_stake,
                     "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" );
 
       changebw( from, receiver, -unstake_net_quantity, -unstake_cpu_quantity, false);
@@ -467,11 +467,11 @@ namespace eosiosystem {
 
       refunds_table refunds_tbl( _self, owner.value );
       auto req = refunds_tbl.find( owner.value );
-      eosio_assert( req != refunds_tbl.end(), "refund request not found" );
-      eosio_assert( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
+      agrio_assert( req != refunds_tbl.end(), "refund request not found" );
+      agrio_assert( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
                     "refund is not available yet" );
 
-      INLINE_ACTION_SENDER(eosio::token, transfer)(
+      INLINE_ACTION_SENDER(agrio::token, transfer)(
          token_account, { {stake_account, active_permission}, {req->owner, active_permission} },
          { stake_account, req->owner, req->net_amount + req->cpu_amount, std::string("unstake") }
       );
@@ -480,4 +480,4 @@ namespace eosiosystem {
    }
 
 
-} //namespace eosiosystem
+} //namespace agriosystem
